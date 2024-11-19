@@ -212,16 +212,4 @@ public class LoginPage extends JFrame {
         this.dispose();
         JOptionPane.showMessageDialog(this, "Login successful! Home page coming soon.");
     }
-
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            UIConfig.setupUIDefaults(); // Add this line
-            try {
-                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            new LoginPage().setVisible(true);
-        });
-    }
 }
