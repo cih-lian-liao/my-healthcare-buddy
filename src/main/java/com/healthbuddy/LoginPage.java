@@ -2,7 +2,7 @@ package com.healthbuddy;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.*;
+
 import java.sql.*;
 
 public class LoginPage extends JFrame {
@@ -184,7 +184,7 @@ public class LoginPage extends JFrame {
                 openHomePage(user);
             } else {
                 JOptionPane.showMessageDialog(this,
-                        "Invalid username or password",
+                        "Invalid username or password. Please sign up if you don't have an account.",
                         "Login Error",
                         JOptionPane.ERROR_MESSAGE);
             }
@@ -198,8 +198,16 @@ public class LoginPage extends JFrame {
     }
 
     private boolean validateCredentials(String username, String password) throws SQLException {
-        // TODO: Implement actual database validation
-        return true; // Temporary for testing
+        String sql = "SELECT password FROM users WHERE username = ?";
+        try (PreparedStatement pstmt = dbManager.getConnection().prepareStatement(sql)) {
+            pstmt.setString(1, username);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                String storedPassword = rs.getString("password");
+                return password.equals(storedPassword);
+            }
+        }
+        return false;
     }
 
     private void redirectToSignUp() {
@@ -208,8 +216,7 @@ public class LoginPage extends JFrame {
     }
 
     private void openHomePage(User user) {
-        // TODO: Implement HomePage
         this.dispose();
-        JOptionPane.showMessageDialog(this, "Login successful! Home page coming soon.");
+        new HomePage(user).setVisible(true);
     }
 }

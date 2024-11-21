@@ -2,6 +2,8 @@ package com.healthbuddy;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.io.File;
@@ -106,5 +108,42 @@ public class DatabaseManager {
         } catch (SQLException e) {
             System.err.println("Error closing connection: " + e.getMessage());
         }
+    }
+
+    public boolean validateLogin(String username, String password) {
+        String sql = "SELECT password FROM users WHERE username = ?";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, username);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                String storedPassword = rs.getString("password");
+                return password.equals(storedPassword); // In production, use password hashing
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public User getUser(String username) {
+        String sql = "SELECT * FROM users WHERE username = ?";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, username);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                User user = new User(username, "");
+                ProfileData profile = new ProfileData();
+                profile.setName(rs.getString("name"));
+                profile.setAge(rs.getInt("age"));
+                profile.setGender(rs.getString("gender"));
+                profile.setHeight(rs.getDouble("height"));
+                profile.setTargetWeight(rs.getDouble("target_weight"));
+                user.setProfile(profile);
+                return user;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }
