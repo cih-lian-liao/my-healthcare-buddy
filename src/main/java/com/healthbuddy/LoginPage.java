@@ -211,8 +211,9 @@ public class LoginPage extends JFrame {
     }
 
     private void redirectToSignUp() {
-        // TODO: Implement sign up page
-        JOptionPane.showMessageDialog(this, "Sign up functionality coming soon!");
+        this.dispose();
+        new SignUpPage();
+        
     }
 
     private void openHomePage(User user) {

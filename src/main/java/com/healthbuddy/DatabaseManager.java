@@ -124,6 +124,20 @@ public class DatabaseManager {
         }
         return false;
     }
+    // Insert username and password
+    public boolean insertUser(String username, String password) throws SQLException {
+        String sql = "INSERT INTO users (username, password) VALUES (?, ?)";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, username);
+            pstmt.setString(2, password); 
+            pstmt.executeUpdate();
+            return true; 
+        } catch (SQLException e) {
+            System.err.println("Error inserting user: " + e.getMessage());
+            throw e; 
+        }
+    }
+    
 
     public User getUser(String username) {
         String sql = "SELECT * FROM users WHERE username = ?";
