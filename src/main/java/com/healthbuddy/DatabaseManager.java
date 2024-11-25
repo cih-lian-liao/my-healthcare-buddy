@@ -137,8 +137,16 @@ public class DatabaseManager {
             throw e; 
         }
     }
+    // Check username uniqueness
+    public boolean checkUsernameExists(String username) throws SQLException {
+        String sql = "SELECT username FROM users WHERE username = ?";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, username);
+            ResultSet rs = pstmt.executeQuery();
+            return rs.next();
+        }
+    }
     
-
     public User getUser(String username) {
         String sql = "SELECT * FROM users WHERE username = ?";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
