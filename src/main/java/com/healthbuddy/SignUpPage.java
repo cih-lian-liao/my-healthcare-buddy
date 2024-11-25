@@ -82,7 +82,6 @@ public class SignUpPage extends JFrame {
         signUpButton.addActionListener(e -> handleSignUp());
         mainPanel.add(signUpButton, gbc);
 
-        
         add(mainPanel);
         setVisible(true);
     }
@@ -142,10 +141,20 @@ public class SignUpPage extends JFrame {
         try {
             DatabaseManager dbManager = new DatabaseManager();
             dbManager.connect();
-            boolean success = dbManager.insertUser(username, password);
-            if (success) {
-                JOptionPane.showMessageDialog(this, "Sign Up Successful! Homepage is coming soon.");
-                dispose();
+
+            if (dbManager.checkUsernameExists(username)) {
+                JOptionPane.showMessageDialog(this, "Username already exists. Please try a new name.", "Error", JOptionPane.ERROR_MESSAGE);
+            } else {
+                boolean success = dbManager.insertUser(username, password);
+                if (success) {
+                    User user = dbManager.getUser(username);
+                    if (user != null) {
+                        dispose();
+                        new HomePage(user).setVisible(true);
+                    } else {
+                        JOptionPane.showMessageDialog(this, "Failed to retrieve user data.", "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
             }
             dbManager.closeConnection();
         } catch (SQLException ex) {
