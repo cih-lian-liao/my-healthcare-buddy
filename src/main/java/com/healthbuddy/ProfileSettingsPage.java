@@ -7,6 +7,7 @@ import java.sql.SQLException;
 
 public class ProfileSettingsPage extends JFrame {
     private User user;
+    private HomePage homePage;
     private Color primaryColor = new Color(100, 149, 237);
     private Color backgroundColor = new Color(240, 248, 255);
 
@@ -17,8 +18,9 @@ public class ProfileSettingsPage extends JFrame {
     private JTextField heightField;
     private JTextField targetWeightField;
 
-    public ProfileSettingsPage(User user) {
+    public ProfileSettingsPage(User user, HomePage homePage) {
         this.user = user;
+        this.homePage = homePage;
         setupUI();
     }
 
@@ -95,10 +97,16 @@ public class ProfileSettingsPage extends JFrame {
         JPanel buttonPanel = new JPanel();
         JButton saveButton = new JButton("Save");
         saveButton.addActionListener(e -> saveProfileData());
-        JButton cancelButton = new JButton("Cancel");
-        cancelButton.addActionListener(e -> dispose());
+        JButton backButton = new JButton("Back");
+        backButton.addActionListener(e -> {
+            this.dispose(); 
+            if (homePage != null) {
+                homePage.setVisible(true);
+            }
+        });
+        
+        buttonPanel.add(backButton);
         buttonPanel.add(saveButton);
-        buttonPanel.add(cancelButton);
 
         gbc.gridx = 0;
         gbc.gridy++;
@@ -152,7 +160,7 @@ public class ProfileSettingsPage extends JFrame {
                 pstmt.setString(3, gender);
                 pstmt.setDouble(4, height);
                 pstmt.setDouble(5, targetWeight);
-                pstmt.setString(6, user.getUsername()); // Assuming user object has a username field
+                pstmt.setString(6, user.getUsername());
                 int rowsUpdated = pstmt.executeUpdate();
 
                 if (rowsUpdated > 0) {
