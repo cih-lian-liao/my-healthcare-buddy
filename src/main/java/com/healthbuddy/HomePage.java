@@ -172,7 +172,7 @@ public class HomePage extends JFrame {
                 // TODO: Open Data Analysis page
                 break;
             case "Profile Settings":
-                // TODO: Open Profile Settings page
+                this.openPofileSettingsPage(user);
                 break;
         }
     }
@@ -188,5 +188,10 @@ public class HomePage extends JFrame {
             this.dispose();
             new LoginPage().setVisible(true);
         }
+    }
+
+    private void openPofileSettingsPage(User user) {
+        this.dispose();
+        new ProfileSettingsPage(user).setVisible(true);
     }
 }
