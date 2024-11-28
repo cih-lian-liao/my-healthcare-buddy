@@ -21,8 +21,7 @@ public class HealthDataEntryPage extends JFrame {
     private JTextField stepsField;
     private JTextField bloodPressureField;
     private JTextField heartRateField;
-    private JTextField dateField; 
-    private JButton datePickerButton;
+    private JTextField dateField;
     private JLabel bmiLabel;
 
     private boolean isDataExists = false;
@@ -70,17 +69,20 @@ public class HealthDataEntryPage extends JFrame {
         mainPanel.add(new JLabel("Date (MM/DD/YYYY):"), gbc);
         dateField = new JTextField(20);
         dateField.setEditable(false);
+
+        // 添加鼠标点击事件，调用通用 CalendarPopup
+        dateField.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                CalendarPopup popup = new CalendarPopup(dateField, selectedDate -> {
+                    loadExistingDataForDate(selectedDate);
+                });
+                popup.show();
+            }
+        });
+
         gbc.gridx = 1;
         mainPanel.add(dateField, gbc);
-
-        // Date picker button
-        datePickerButton = new JButton("Pick Date");
-        datePickerButton.addActionListener(e -> {
-            showDatePicker();
-            loadExistingData();
-        });
-        gbc.gridx = 2;
-        mainPanel.add(datePickerButton, gbc);
 
         // Weight
         gbc.gridx = 0;
@@ -166,30 +168,11 @@ public class HealthDataEntryPage extends JFrame {
         dateField.setText(formatter.format(new Date()));
     }
 
-    private void showDatePicker() {
-        JSpinner dateSpinner = new JSpinner(new SpinnerDateModel());
-        JSpinner.DateEditor editor = new JSpinner.DateEditor(dateSpinner, "MM/dd/yyyy");
-        dateSpinner.setEditor(editor);
-
-        int result = JOptionPane.showOptionDialog(
-                this,
-                dateSpinner,
-                "Select Date",
-                JOptionPane.OK_CANCEL_OPTION,
-                JOptionPane.PLAIN_MESSAGE,
-                null,
-                null,
-                null);
-
-        if (result == JOptionPane.OK_OPTION) {
-            Date selectedDate = (Date) dateSpinner.getValue();
-            SimpleDateFormat formatter = new SimpleDateFormat("MM/dd/yyyy");
-            dateField.setText(formatter.format(selectedDate));
-        }
+    private void loadExistingData() {
+        loadExistingDataForDate(dateField.getText().trim());
     }
 
-    private void loadExistingData() {
-        String date = dateField.getText().trim();
+    private void loadExistingDataForDate(String date) {
         if (date.isEmpty()) return;
 
         try {
