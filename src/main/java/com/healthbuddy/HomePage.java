@@ -169,10 +169,14 @@ public class HomePage extends JFrame {
                 // TODO: Open Daily Habits page
                 break;
             case "Data Analysis":
-                // TODO: Open Data Analysis page
+                DataAnalysisPage dataAnalysisPage = new DataAnalysisPage(user, this);
+                this.setVisible(false);
+                dataAnalysisPage.setVisible(true);
                 break;
             case "Profile Settings":
-                this.openPofileSettingsPage(user);
+                ProfileSettingsPage profilePage = new ProfileSettingsPage(user, this);
+                this.setVisible(false);
+                profilePage.setVisible(true);
                 break;
         }
     }
