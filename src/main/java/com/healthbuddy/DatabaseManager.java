@@ -202,6 +202,23 @@ public class DatabaseManager {
         pstmt.setString(2, date);
         return pstmt.executeQuery();
     }
+        // Updates an existing daily habit record in the database
+public boolean updateDailyHabit(String username, String date, int waterIntake, String diet, int sleepHours) throws SQLException {
+    String sql = "UPDATE daily_habits SET water_intake = ?, diet = ?, sleep_hours = ? WHERE username = ? AND date = ?";
+    try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+        pstmt.setInt(1, waterIntake); 
+        pstmt.setString(2, diet); 
+        pstmt.setInt(3, sleepHours); 
+        pstmt.setString(4, username);
+        pstmt.setString(5, date); 
+
+        int rowsUpdated = pstmt.executeUpdate();
+        return rowsUpdated > 0;
+    } catch (SQLException e) {
+        System.err.println("Error updating daily habit: " + e.getMessage());
+        throw e;
+    }
+}
  
     
 }
