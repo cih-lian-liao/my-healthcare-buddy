@@ -166,7 +166,7 @@ public class HomePage extends JFrame {
                 this.openHealthDataEntry(user);
                 break;
             case "Daily Habits":
-                // TODO: Open Daily Habits page
+                this.openDailyHabitSettingPage(user);
                 break;
             case "Data Analysis":
                 DataAnalysisPage dataAnalysisPage = new DataAnalysisPage(user, this);
@@ -199,8 +199,13 @@ public class HomePage extends JFrame {
         new ProfileSettingsPage(user, this).setVisible(true);
     }
 
+    private void openDailyHabitSettingPage(User user) {
+        this.dispose();
+        new DailyHabitSetting(user).setVisible(true);
+
     private void openHealthDataEntry(User user) {
         this.dispose();
         new HealthDataEntryPage(user, this).setVisible(true);
+
     }
 }

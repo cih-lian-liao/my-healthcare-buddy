@@ -168,4 +168,40 @@ public class DatabaseManager {
         }
         return null;
     }
+    // Inserts a new daily habit record into the database
+    public boolean insertDailyHabit(String username, String date, int waterIntake, String diet, int sleepHours) throws SQLException {
+        String sql = "INSERT INTO daily_habits (username, date, water_intake, diet, sleep_hours) VALUES (?, ?, ?, ?, ?)";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, username);
+            pstmt.setString(2, date);
+            pstmt.setInt(3, waterIntake);
+            pstmt.setString(4, diet);
+            pstmt.setInt(5, sleepHours);
+            pstmt.executeUpdate();
+            return true;
+        } catch (SQLException e) {
+            System.err.println("Error inserting daily habit: " + e.getMessage());
+            throw e;
+        }
+    }
+    // Checks if a daily habit record exists for the given username and date
+    public boolean checkDailyHabitExists(String username, String date) throws SQLException {
+        String sql = "SELECT 1 FROM daily_habits WHERE username = ? AND date = ?";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, username);
+            pstmt.setString(2, date);
+            ResultSet rs = pstmt.executeQuery();
+            return rs.next();
+        }
+    }
+    // Retrieves the daily habit record for the given username and date
+    public ResultSet getDailyHabit(String username, String date) throws SQLException {
+        String sql = "SELECT * FROM daily_habits WHERE username = ? AND date = ?";
+        PreparedStatement pstmt = connection.prepareStatement(sql);
+        pstmt.setString(1, username);
+        pstmt.setString(2, date);
+        return pstmt.executeQuery();
+    }
+ 
+    
 }
