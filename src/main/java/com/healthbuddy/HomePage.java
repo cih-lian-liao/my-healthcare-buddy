@@ -201,7 +201,7 @@ public class HomePage extends JFrame {
 
     private void openDailyHabitSettingPage(User user) {
         this.dispose();
-        new DailyHabitSetting(user).setVisible(true);
+        new DailyHabitSetting(user).setVisible(true);}
 
     private void openHealthDataEntry(User user) {
         this.dispose();
