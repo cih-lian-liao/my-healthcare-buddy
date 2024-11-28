@@ -163,7 +163,9 @@ public class HomePage extends JFrame {
     private void handleMenuClick(String menuTitle) {
         switch (menuTitle) {
             case "Health Data Entry":
-                this.openHealthDataEntry(user);
+                HealthDataEntryPage healthDataEntryPage = new HealthDataEntryPage(user, this);
+                this.setVisible(false);
+                healthDataEntryPage.setVisible(true);
                 break;
             case "Daily Habits":
                 // TODO: Open Daily Habits page
@@ -194,13 +196,5 @@ public class HomePage extends JFrame {
         }
     }
 
-    private void openPofileSettingsPage(User user) {
-        this.dispose();
-        new ProfileSettingsPage(user, this).setVisible(true);
-    }
-
-    private void openHealthDataEntry(User user) {
-        this.dispose();
-        new HealthDataEntryPage(user, this).setVisible(true);
-    }
+    
 }
