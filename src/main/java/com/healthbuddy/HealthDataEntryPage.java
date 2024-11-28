@@ -5,6 +5,7 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -24,10 +25,14 @@ public class HealthDataEntryPage extends JFrame {
     private JButton datePickerButton; // 日期選擇按鈕
     private JLabel bmiLabel;
 
+    private boolean isDataExists = false; // 標記是否已存在數據
+
     public HealthDataEntryPage(User user, HomePage homePage) {
         this.user = user;
         this.homePage = homePage;
         setupUI();
+        setDefaultDate(); // 設置預設日期為今天
+        loadExistingData(); // 加載當天數據（如果存在）
     }
 
     private void setupUI() {
@@ -64,13 +69,16 @@ public class HealthDataEntryPage extends JFrame {
         gbc.gridy++;
         mainPanel.add(new JLabel("Date (MM/DD/YYYY):"), gbc);
         dateField = new JTextField(20);
-        dateField.setEditable(false);
+        dateField.setEditable(false); // 禁止用戶手動輸入
         gbc.gridx = 1;
         mainPanel.add(dateField, gbc);
 
         // Date picker button
         datePickerButton = new JButton("Pick Date");
-        datePickerButton.addActionListener(e -> showDatePicker());
+        datePickerButton.addActionListener(e -> {
+            showDatePicker();
+            loadExistingData(); // 選擇日期後加載數據
+        });
         gbc.gridx = 2;
         mainPanel.add(datePickerButton, gbc);
 
@@ -153,6 +161,11 @@ public class HealthDataEntryPage extends JFrame {
         add(mainPanel);
     }
 
+    private void setDefaultDate() {
+        SimpleDateFormat formatter = new SimpleDateFormat("MM/dd/yyyy");
+        dateField.setText(formatter.format(new Date())); // 設置為今天的日期
+    }
+
     private void showDatePicker() {
         JSpinner dateSpinner = new JSpinner(new SpinnerDateModel());
         JSpinner.DateEditor editor = new JSpinner.DateEditor(dateSpinner, "MM/dd/yyyy");
@@ -175,45 +188,45 @@ public class HealthDataEntryPage extends JFrame {
         }
     }
 
-    private void updateBMI() {
-        try {
-            double weight = Double.parseDouble(weightField.getText().trim());
+    private void loadExistingData() {
+        String date = dateField.getText().trim();
+        if (date.isEmpty()) return;
 
-            // 從資料庫獲取身高
+        try {
             DatabaseManager dbManager = new DatabaseManager();
             dbManager.connect();
-            double height = dbManager.getUser(user.getUsername()).getProfile().getHeight();
-            dbManager.closeConnection();
 
-            if (height > 0) {
-                double heightInMeters = height / 100; // 將身高從 cm 轉換為 m
-                double bmi = weight / (heightInMeters * heightInMeters);
-                bmiLabel.setText(String.format("%.2f", bmi)); // 格式化為小數點後兩位
-            } else {
-                bmiLabel.setText("N/A");
-                int response = JOptionPane.showConfirmDialog(
-                        this,
-                        "Your height is not set. Would you like to go to Profile Settings to update your height?",
-                        "Height Missing",
-                        JOptionPane.YES_NO_OPTION,
-                        JOptionPane.WARNING_MESSAGE);
+            String query = "SELECT * FROM health_data WHERE username = ? AND date = ?";
+            try (PreparedStatement pstmt = dbManager.getConnection().prepareStatement(query)) {
+                pstmt.setString(1, user.getUsername());
+                pstmt.setString(2, date);
 
-                if (response == JOptionPane.YES_OPTION) {
-                    this.dispose();
-                    new ProfileSettingsPage(user, homePage).setVisible(true);
+                ResultSet rs = pstmt.executeQuery();
+                if (rs.next()) {
+                    isDataExists = true;
+                    weightField.setText(String.valueOf(rs.getDouble("weight")));
+                    stepsField.setText(String.valueOf(rs.getInt("steps")));
+                    bloodPressureField.setText(rs.getString("blood_pressure"));
+                    heartRateField.setText(String.valueOf(rs.getInt("heart_rate")));
+                    bmiLabel.setText(String.format("%.2f", rs.getDouble("bmi")));
+                } else {
+                    isDataExists = false;
+                    weightField.setText("");
+                    stepsField.setText("");
+                    bloodPressureField.setText("");
+                    heartRateField.setText("");
+                    bmiLabel.setText("N/A");
                 }
             }
-        } catch (NumberFormatException e) {
-            bmiLabel.setText("N/A");
+
+            dbManager.closeConnection();
         } catch (SQLException e) {
             JOptionPane.showMessageDialog(this, "Database error: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-            bmiLabel.setText("Error");
         }
     }
 
     private void saveHealthData() {
         try {
-            // Retrieve input data
             double weight = Double.parseDouble(weightField.getText().trim());
             int steps = Integer.parseInt(stepsField.getText().trim());
             String bloodPressure = bloodPressureField.getText().trim();
@@ -229,29 +242,56 @@ public class HealthDataEntryPage extends JFrame {
             dbManager.connect();
 
             double height = dbManager.getUser(user.getUsername()).getProfile().getHeight();
-            double bmi = weight / Math.pow(height / 100, 2); // 計算 BMI
+            double bmi = weight / Math.pow(height / 100, 2);
 
-            // Insert health data
-            String insertSql = "INSERT INTO health_data (username, date, weight, bmi, steps, blood_pressure, heart_rate) " +
-                               "VALUES (?, ?, ?, ?, ?, ?, ?)";
-            try (PreparedStatement pstmt = dbManager.getConnection().prepareStatement(insertSql)) {
-                pstmt.setString(1, user.getUsername());
-                pstmt.setString(2, date);
-                pstmt.setDouble(3, weight);
-                pstmt.setDouble(4, bmi);
-                pstmt.setInt(5, steps);
-                pstmt.setString(6, bloodPressure);
-                pstmt.setInt(7, heartRate);
+            String sql;
+            if (isDataExists) {
+                sql = "UPDATE health_data SET weight = ?, bmi = ?, steps = ?, blood_pressure = ?, heart_rate = ? WHERE username = ? AND date = ?";
+            } else {
+                sql = "INSERT INTO health_data (weight, bmi, steps, blood_pressure, heart_rate, username, date) VALUES (?, ?, ?, ?, ?, ?, ?)";
+            }
+
+            try (PreparedStatement pstmt = dbManager.getConnection().prepareStatement(sql)) {
+                pstmt.setDouble(1, weight);
+                pstmt.setDouble(2, bmi);
+                pstmt.setInt(3, steps);
+                pstmt.setString(4, bloodPressure);
+                pstmt.setInt(5, heartRate);
+                pstmt.setString(6, user.getUsername());
+                pstmt.setString(7, date);
+
                 pstmt.executeUpdate();
-
                 JOptionPane.showMessageDialog(this, "Health data saved successfully!");
             }
+
             dbManager.closeConnection();
         } catch (SQLException e) {
             JOptionPane.showMessageDialog(this, "Database error: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-            e.printStackTrace();
         } catch (NumberFormatException e) {
             JOptionPane.showMessageDialog(this, "Invalid input. Please ensure all fields are filled correctly.", "Error", JOptionPane.WARNING_MESSAGE);
+        }
+    }
+
+    private void updateBMI() {
+        try {
+            double weight = Double.parseDouble(weightField.getText().trim());
+
+            DatabaseManager dbManager = new DatabaseManager();
+            dbManager.connect();
+            double height = dbManager.getUser(user.getUsername()).getProfile().getHeight();
+            dbManager.closeConnection();
+
+            if (height > 0) {
+                double heightInMeters = height / 100;
+                double bmi = weight / (heightInMeters * heightInMeters);
+                bmiLabel.setText(String.format("%.2f", bmi));
+            } else {
+                bmiLabel.setText("N/A");
+            }
+        } catch (NumberFormatException e) {
+            bmiLabel.setText("N/A");
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Database error: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 }
