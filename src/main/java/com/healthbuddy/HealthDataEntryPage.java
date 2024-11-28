@@ -21,18 +21,18 @@ public class HealthDataEntryPage extends JFrame {
     private JTextField stepsField;
     private JTextField bloodPressureField;
     private JTextField heartRateField;
-    private JTextField dateField; // 日期輸入框
-    private JButton datePickerButton; // 日期選擇按鈕
+    private JTextField dateField; 
+    private JButton datePickerButton;
     private JLabel bmiLabel;
 
-    private boolean isDataExists = false; // 標記是否已存在數據
+    private boolean isDataExists = false;
 
     public HealthDataEntryPage(User user, HomePage homePage) {
         this.user = user;
         this.homePage = homePage;
         setupUI();
-        setDefaultDate(); // 設置預設日期為今天
-        loadExistingData(); // 加載當天數據（如果存在）
+        setDefaultDate();
+        loadExistingData();
     }
 
     private void setupUI() {
@@ -69,7 +69,7 @@ public class HealthDataEntryPage extends JFrame {
         gbc.gridy++;
         mainPanel.add(new JLabel("Date (MM/DD/YYYY):"), gbc);
         dateField = new JTextField(20);
-        dateField.setEditable(false); // 禁止用戶手動輸入
+        dateField.setEditable(false);
         gbc.gridx = 1;
         mainPanel.add(dateField, gbc);
 
@@ -77,7 +77,7 @@ public class HealthDataEntryPage extends JFrame {
         datePickerButton = new JButton("Pick Date");
         datePickerButton.addActionListener(e -> {
             showDatePicker();
-            loadExistingData(); // 選擇日期後加載數據
+            loadExistingData();
         });
         gbc.gridx = 2;
         mainPanel.add(datePickerButton, gbc);
@@ -163,7 +163,7 @@ public class HealthDataEntryPage extends JFrame {
 
     private void setDefaultDate() {
         SimpleDateFormat formatter = new SimpleDateFormat("MM/dd/yyyy");
-        dateField.setText(formatter.format(new Date())); // 設置為今天的日期
+        dateField.setText(formatter.format(new Date()));
     }
 
     private void showDatePicker() {
