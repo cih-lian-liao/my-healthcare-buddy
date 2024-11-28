@@ -163,16 +163,20 @@ public class HomePage extends JFrame {
     private void handleMenuClick(String menuTitle) {
         switch (menuTitle) {
             case "Health Data Entry":
-                // TODO: Open Health Data Entry page
+                this.openHealthDataEntry(user);
                 break;
             case "Daily Habits":
                 this.openDailyHabitSettingPage(user);
                 break;
             case "Data Analysis":
-                // TODO: Open Data Analysis page
+                DataAnalysisPage dataAnalysisPage = new DataAnalysisPage(user, this);
+                this.setVisible(false);
+                dataAnalysisPage.setVisible(true);
                 break;
             case "Profile Settings":
-                this.openPofileSettingsPage(user);
+                ProfileSettingsPage profilePage = new ProfileSettingsPage(user, this);
+                this.setVisible(false);
+                profilePage.setVisible(true);
                 break;
         }
     }
@@ -198,5 +202,10 @@ public class HomePage extends JFrame {
     private void openDailyHabitSettingPage(User user) {
         this.dispose();
         new DailyHabitSetting(user).setVisible(true);
+
+    private void openHealthDataEntry(User user) {
+        this.dispose();
+        new HealthDataEntryPage(user, this).setVisible(true);
+
     }
 }
