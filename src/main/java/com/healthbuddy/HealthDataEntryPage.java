@@ -70,7 +70,6 @@ public class HealthDataEntryPage extends JFrame {
         dateField = new JTextField(20);
         dateField.setEditable(false);
 
-        // 添加鼠标点击事件，调用通用 CalendarPopup
         dateField.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent e) {
