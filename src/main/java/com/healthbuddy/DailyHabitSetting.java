@@ -63,9 +63,9 @@ public class DailyHabitSetting extends JFrame {
         gbc.gridy = 1;
         mainPanel.add(dateField, gbc);
 
-        waterIntakeField = addRow(mainPanel, gbc, 2, "Water Intake (Integer)*:");
-        exerciseField = addRow(mainPanel, gbc, 3, "Exercise (Integer)*:");
-        sleepHoursField = addRow(mainPanel, gbc, 4, "Sleep Hours (Integer)*:");
+        waterIntakeField = addRow(mainPanel, gbc, 2, "Water Intake (Integer):");
+        exerciseField = addRow(mainPanel, gbc, 3, "Exercise (Integer):");
+        sleepHoursField = addRow(mainPanel, gbc, 4, "Sleep Hours (Integer):");
 
         // Buttons Panel
         JPanel buttonPanel = new JPanel(new GridLayout(1, 2, 10, 10));
@@ -151,20 +151,37 @@ public class DailyHabitSetting extends JFrame {
         try {
             DatabaseManager dbManager = new DatabaseManager();
             dbManager.connect();
-            boolean success = dbManager.insertDailyHabit(
-                    user.getUsername(),
-                    date,
-                    Integer.parseInt(waterIntake),
-                    exercise,
-                    Integer.parseInt(sleepHours)
-            );
-            dbManager.closeConnection();
-
-            if (success) {
-                JOptionPane.showMessageDialog(this, "Data saved successfully!");
+            // Check if date exists
+            boolean exists = dbManager.checkDailyHabitExists(user.getUsername(), date);
+            if (exists) {
+                boolean success = dbManager.updateDailyHabit(
+                        user.getUsername(),
+                        date,
+                        Integer.parseInt(waterIntake),
+                        exercise,
+                        Integer.parseInt(sleepHours)
+                );
+                if (success) {
+                    JOptionPane.showMessageDialog(this, "Data updated successfully!");
+                } else {
+                    JOptionPane.showMessageDialog(this, "Failed to update data!", "Error", JOptionPane.ERROR_MESSAGE);
+                }
             } else {
-                JOptionPane.showMessageDialog(this, "Failed to save data!", "Error", JOptionPane.ERROR_MESSAGE);
+                boolean success = dbManager.insertDailyHabit(
+                        user.getUsername(),
+                        date,
+                        Integer.parseInt(waterIntake),
+                        exercise,
+                        Integer.parseInt(sleepHours)
+                );
+                if (success) {
+                    JOptionPane.showMessageDialog(this, "Data saved successfully!");
+                } else {
+                    JOptionPane.showMessageDialog(this, "Failed to save data!", "Error", JOptionPane.ERROR_MESSAGE);
+                }
             }
+
+            dbManager.closeConnection();
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Error: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             e.printStackTrace();
