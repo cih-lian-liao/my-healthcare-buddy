@@ -6,7 +6,13 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.io.File;
+import java.text.SimpleDateFormat;
+import java.text.ParseException;
+import java.util.Calendar;
+import java.util.Date;
 
 public class DatabaseManager {
     private static final String DB_URL = "jdbc:sqlite:health_buddy.db";
@@ -52,7 +58,7 @@ public class DatabaseManager {
                 "CREATE TABLE IF NOT EXISTS health_data (" +
                         "id INTEGER PRIMARY KEY AUTOINCREMENT," +
                         "username TEXT," +
-                        "date TEXT," +
+                        "date DATE NOT NULL," +
                         "weight REAL," +
                         "bmi REAL," +
                         "steps INTEGER," +
@@ -63,7 +69,7 @@ public class DatabaseManager {
                 "CREATE TABLE IF NOT EXISTS daily_habits (" +
                         "id INTEGER PRIMARY KEY AUTOINCREMENT," +
                         "username TEXT," +
-                        "date TEXT," +
+                        "date DATE NOT NULL," +
                         "water_intake INTEGER," +
                         "diet TEXT," +
                         "sleep_hours INTEGER," +
@@ -91,34 +97,51 @@ public class DatabaseManager {
 
     private void createDefaultData() {
         try (Statement stmt = connection.createStatement()) {
-            // Insert test user if not exists
+            // Insert test user
             stmt.execute("INSERT OR IGNORE INTO users (username, password, name, age, gender, height, target_weight) " +
                     "VALUES ('test', 'test123', 'Test User', 25, 'Male', 175.0, 70.0)");
 
-            // Insert sample health data
-            String[] healthData = {
-                    "INSERT OR IGNORE INTO health_data (username, date, weight, bmi, steps, blood_pressure, heart_rate) VALUES "
-                            +
-                            "('test', '03/15/2024', 75.5, 24.6, 8500, '120/80', 72)",
-                    "INSERT OR IGNORE INTO health_data (username, date, weight, bmi, steps, blood_pressure, heart_rate) VALUES "
-                            +
-                            "('test', '03/16/2024', 75.2, 24.5, 9000, '119/79', 71)",
-                    "INSERT OR IGNORE INTO health_data (username, date, weight, bmi, steps, blood_pressure, heart_rate) VALUES "
-                            +
-                            "('test', '03/17/2024', 74.8, 24.4, 9500, '118/78', 70)",
-                    "INSERT OR IGNORE INTO health_data (username, date, weight, bmi, steps, blood_pressure, heart_rate) VALUES "
-                            +
-                            "('test', '03/18/2024', 74.5, 24.3, 10000, '118/77', 69)",
-                    "INSERT OR IGNORE INTO health_data (username, date, weight, bmi, steps, blood_pressure, heart_rate) VALUES "
-                            +
-                            "('test', '03/19/2024', 74.2, 24.2, 10500, '117/77', 68)",
-                    "INSERT OR IGNORE INTO health_data (username, date, weight, bmi, steps, blood_pressure, heart_rate) VALUES "
-                            +
-                            "('test', '03/20/2024', 73.8, 24.1, 11000, '117/76', 67)"
-            };
+            // Get current date for sample data
+            Calendar cal = Calendar.getInstance();
+            SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy");
 
-            for (String sql : healthData) {
+            // Create sample data for last 90 days
+            for (int i = 0; i < 90; i++) {
+                String date = sdf.format(cal.getTime());
+
+                // Create realistic trends with some random variation
+                double baseWeight = 75.5 - (i * 0.05); // Slow weight loss trend
+                double randomWeight = baseWeight + (Math.random() * 0.4 - 0.2); // ±0.2 kg variation
+                double weight = Math.round(randomWeight * 10.0) / 10.0;
+
+                double bmi = weight / Math.pow(175.0 / 100, 2);
+
+                // Steps with weekend variation and random noise
+                int baseSteps = 8500 + (i * 20); // Gradually increasing base steps
+                int weekendReduction = (cal.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY ||
+                        cal.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY) ? 2000 : 0;
+                int steps = baseSteps - weekendReduction + (int) (Math.random() * 1000 - 500);
+
+                // Blood pressure with slight variation
+                int baseSystolic = 120 - (i / 30); // Slight improvement over time
+                int systolic = baseSystolic + (int) (Math.random() * 6 - 3); // ±3 variation
+                int baseDiastolic = 80 - (i / 30);
+                int diastolic = baseDiastolic + (int) (Math.random() * 4 - 2); // ±2 variation
+
+                // Heart rate with activity correlation
+                int baseHeartRate = 72 - (i / 30); // Slight improvement over time
+                int stepEffect = (steps > 10000) ? 2 : 0; // Higher heart rate on active days
+                int heartRate = baseHeartRate - stepEffect + (int) (Math.random() * 4 - 2);
+
+                String sql = String.format(
+                        "INSERT OR IGNORE INTO health_data (username, date, weight, bmi, steps, blood_pressure, heart_rate) "
+                                +
+                                "VALUES ('test', '%s', %.1f, %.1f, %d, '%d/%d', %d)",
+                        date, weight, bmi, steps, systolic, diastolic, heartRate);
                 stmt.execute(sql);
+
+                // Move to previous day
+                cal.add(Calendar.DAY_OF_MONTH, -1);
             }
         } catch (SQLException e) {
             System.err.println("Error creating default data: " + e.getMessage());
@@ -185,51 +208,46 @@ public class DatabaseManager {
                 break;
             default:
                 columnName = "weight";
+                break;
         }
 
-        int limit;
+        // Get current date in MM/dd/yyyy format
+        SimpleDateFormat outputFormat = new SimpleDateFormat("MM/dd/yyyy");
+        Calendar cal = Calendar.getInstance();
+        String endDate = outputFormat.format(cal.getTime());
+
+        // Calculate start date
         switch (timeRange) {
             case "Last Week":
-                limit = 7;
+                cal.add(Calendar.DAY_OF_MONTH, -7);
                 break;
             case "Last Month":
-                limit = 30;
+                cal.add(Calendar.MONTH, -1);
                 break;
             case "Last 3 Months":
-                limit = 90;
+                cal.add(Calendar.MONTH, -3);
                 break;
             case "Last Year":
-                limit = 365;
+                cal.add(Calendar.YEAR, -1);
                 break;
             default:
-                limit = 30;
+                cal.add(Calendar.DAY_OF_MONTH, -7);
         }
+        String startDate = outputFormat.format(cal.getTime());
 
-        String dateFilter;
-        switch (timeRange) {
-            case "Last Week":
-                dateFilter = "date >= date('now', '-7 days') AND date <= date('now')";
-                break;
-            case "Last Month":
-                dateFilter = "date >= date('now', '-1 month') AND date <= date('now')";
-                break;
-            case "Last 3 Months":
-                dateFilter = "date >= date('now', '-3 months') AND date <= date('now')";
-                break;
-            case "Last Year":
-                dateFilter = "date >= date('now', '-1 year') AND date <= date('now')";
-                break;
-            default:
-                dateFilter = "date >= date('now', '-7 days') AND date <= date('now')";
-                break;
-        }
-
+        // Simple query since dates are stored in MM/dd/yyyy format
         String sql = "SELECT date, " + columnName + " FROM health_data " +
-                "WHERE username = ? AND " + dateFilter + " " +
+                "WHERE username = ? " +
+                "AND date >= ? " +
+                "AND date <= ? " +
                 "ORDER BY date ASC";
 
+        System.out.println("Query dates: Start=" + startDate + ", End=" + endDate);
         PreparedStatement pstmt = connection.prepareStatement(sql);
         pstmt.setString(1, username);
+        pstmt.setString(2, startDate);
+        pstmt.setString(3, endDate);
+
         return pstmt.executeQuery();
     }
 
@@ -311,57 +329,85 @@ public class DatabaseManager {
         }
         return null;
     }
+
     // Inserts a new daily habit record into the database
-    public boolean insertDailyHabit(String username, String date, int waterIntake, String diet, int sleepHours) throws SQLException {
-        String sql = "INSERT INTO daily_habits (username, date, water_intake, diet, sleep_hours) VALUES (?, ?, ?, ?, ?)";
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, username);
-            pstmt.setString(2, date);
-            pstmt.setInt(3, waterIntake);
-            pstmt.setString(4, diet);
-            pstmt.setInt(5, sleepHours);
-            pstmt.executeUpdate();
-            return true;
+    public boolean insertDailyHabit(String username, String date, int waterIntake, String diet, int sleepHours)
+            throws SQLException {
+        try {
+            // Convert MM/dd/yyyy to yyyy-MM-dd
+            SimpleDateFormat inputFormat = new SimpleDateFormat("MM/dd/yyyy");
+            SimpleDateFormat outputFormat = new SimpleDateFormat("yyyy-MM-dd");
+            Date parsedDate = inputFormat.parse(date);
+            String formattedDate = outputFormat.format(parsedDate);
+
+            String sql = "INSERT INTO daily_habits (username, date, water_intake, diet, sleep_hours) VALUES (?, ?, ?, ?, ?)";
+            try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+                pstmt.setString(1, username);
+                pstmt.setString(2, formattedDate);
+                pstmt.setInt(3, waterIntake);
+                pstmt.setString(4, diet);
+                pstmt.setInt(5, sleepHours);
+                pstmt.executeUpdate();
+                return true;
+            }
+        } catch (ParseException e) {
+            System.err.println("Error parsing date: " + e.getMessage());
+            throw new SQLException("Invalid date format. Expected MM/dd/yyyy");
         } catch (SQLException e) {
             System.err.println("Error inserting daily habit: " + e.getMessage());
             throw e;
         }
     }
+
     // Checks if a daily habit record exists for the given username and date
-    public boolean checkDailyHabitExists(String username, String date) throws SQLException {
-        String sql = "SELECT 1 FROM daily_habits WHERE username = ? AND date = ?";
+    public boolean checkDailyHabitExists(String username, String date) throws SQLException, ParseException {
+        SimpleDateFormat inputFormat = new SimpleDateFormat("MM/dd/yyyy");
+        SimpleDateFormat outputFormat = new SimpleDateFormat("yyyy-MM-dd");
+        Date parsedDate = inputFormat.parse(date);
+        String formattedDate = outputFormat.format(parsedDate);
+        String sql = "SELECT 1 FROM daily_habits WHERE username = ? AND date = date(?)";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setString(1, username);
-            pstmt.setString(2, date);
+            pstmt.setString(2, formattedDate);
             ResultSet rs = pstmt.executeQuery();
             return rs.next();
         }
     }
+
     // Retrieves the daily habit record for the given username and date
-    public ResultSet getDailyHabit(String username, String date) throws SQLException {
-        String sql = "SELECT * FROM daily_habits WHERE username = ? AND date = ?";
+    public ResultSet getDailyHabit(String username, String date) throws SQLException, ParseException {
+        SimpleDateFormat inputFormat = new SimpleDateFormat("MM/dd/yyyy");
+        SimpleDateFormat outputFormat = new SimpleDateFormat("yyyy-MM-dd");
+        Date parsedDate = inputFormat.parse(date);
+        String formattedDate = outputFormat.format(parsedDate);
+        String sql = "SELECT * FROM daily_habits WHERE username = ? AND date = date(?)";
         PreparedStatement pstmt = connection.prepareStatement(sql);
         pstmt.setString(1, username);
-        pstmt.setString(2, date);
+        pstmt.setString(2, formattedDate);
         return pstmt.executeQuery();
     }
-        // Updates an existing daily habit record in the database
-public boolean updateDailyHabit(String username, String date, int waterIntake, String diet, int sleepHours) throws SQLException {
-    String sql = "UPDATE daily_habits SET water_intake = ?, diet = ?, sleep_hours = ? WHERE username = ? AND date = ?";
-    try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-        pstmt.setInt(1, waterIntake); 
-        pstmt.setString(2, diet); 
-        pstmt.setInt(3, sleepHours); 
-        pstmt.setString(4, username);
-        pstmt.setString(5, date); 
 
-        int rowsUpdated = pstmt.executeUpdate();
-        return rowsUpdated > 0;
-    } catch (SQLException e) {
-        System.err.println("Error updating daily habit: " + e.getMessage());
-        throw e;
+    // Updates an existing daily habit record in the database
+    public boolean updateDailyHabit(String username, String date, int waterIntake, String diet, int sleepHours)
+            throws SQLException, ParseException {
+        SimpleDateFormat inputFormat = new SimpleDateFormat("MM/dd/yyyy");
+        SimpleDateFormat outputFormat = new SimpleDateFormat("yyyy-MM-dd");
+        Date parsedDate = inputFormat.parse(date);
+        String formattedDate = outputFormat.format(parsedDate);
+        String sql = "UPDATE daily_habits SET water_intake = ?, diet = ?, sleep_hours = ? WHERE username = ? AND date = date(?)";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setInt(1, waterIntake);
+            pstmt.setString(2, diet);
+            pstmt.setInt(3, sleepHours);
+            pstmt.setString(4, username);
+            pstmt.setString(2, formattedDate);
+
+            int rowsUpdated = pstmt.executeUpdate();
+            return rowsUpdated > 0;
+        } catch (SQLException e) {
+            System.err.println("Error updating daily habit: " + e.getMessage());
+            throw e;
+        }
     }
-}
- 
-    
+
 }

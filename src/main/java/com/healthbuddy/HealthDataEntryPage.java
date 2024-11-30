@@ -9,6 +9,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.text.SimpleDateFormat;
+import java.text.ParseException;
 
 public class HealthDataEntryPage extends JFrame {
     private User user;
@@ -172,16 +174,27 @@ public class HealthDataEntryPage extends JFrame {
     }
 
     private void loadExistingDataForDate(String date) {
-        if (date.isEmpty()) return;
+        if (date.isEmpty())
+            return;
 
         try {
             DatabaseManager dbManager = new DatabaseManager();
             dbManager.connect();
-
-            String query = "SELECT * FROM health_data WHERE username = ? AND date = ?";
+            SimpleDateFormat inputFormat = new SimpleDateFormat("MM/dd/yyyy");
+            SimpleDateFormat outputFormat = new SimpleDateFormat("yyyy-MM-dd");
+            Date parsedDate;
+            try {
+                parsedDate = inputFormat.parse(date);
+            } catch (ParseException e) {
+                JOptionPane.showMessageDialog(this, "Date parsing error: " + e.getMessage(), "Error",
+                        JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            String formattedDate = outputFormat.format(parsedDate);
+            String query = "SELECT * FROM health_data WHERE username = ? AND date = date(?)";
             try (PreparedStatement pstmt = dbManager.getConnection().prepareStatement(query)) {
                 pstmt.setString(1, user.getUsername());
-                pstmt.setString(2, date);
+                pstmt.setString(2, formattedDate);
 
                 ResultSet rs = pstmt.executeQuery();
                 if (rs.next()) {
@@ -203,7 +216,8 @@ public class HealthDataEntryPage extends JFrame {
 
             dbManager.closeConnection();
         } catch (SQLException e) {
-            JOptionPane.showMessageDialog(this, "Database error: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Database error: " + e.getMessage(), "Error",
+                    JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -214,6 +228,17 @@ public class HealthDataEntryPage extends JFrame {
             String bloodPressure = bloodPressureField.getText().trim();
             int heartRate = Integer.parseInt(heartRateField.getText().trim());
             String date = dateField.getText().trim();
+            SimpleDateFormat inputFormat = new SimpleDateFormat("MM/dd/yyyy");
+            SimpleDateFormat outputFormat = new SimpleDateFormat("yyyy-MM-dd");
+            Date parsedDate;
+            try {
+                parsedDate = inputFormat.parse(date);
+            } catch (ParseException e) {
+                JOptionPane.showMessageDialog(this, "Date parsing error: " + e.getMessage(), "Error",
+                        JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            String formattedDate = outputFormat.format(parsedDate);
 
             if (date.isEmpty()) {
                 JOptionPane.showMessageDialog(this, "Please select a date.", "Error", JOptionPane.WARNING_MESSAGE);
@@ -228,9 +253,9 @@ public class HealthDataEntryPage extends JFrame {
 
             String sql;
             if (isDataExists) {
-                sql = "UPDATE health_data SET weight = ?, bmi = ?, steps = ?, blood_pressure = ?, heart_rate = ? WHERE username = ? AND date = ?";
+                sql = "UPDATE health_data SET weight = ?, bmi = ?, steps = ?, blood_pressure = ?, heart_rate = ? WHERE username = ? AND date = date(?)";
             } else {
-                sql = "INSERT INTO health_data (weight, bmi, steps, blood_pressure, heart_rate, username, date) VALUES (?, ?, ?, ?, ?, ?, ?)";
+                sql = "INSERT INTO health_data (weight, bmi, steps, blood_pressure, heart_rate, username, date) VALUES (?, ?, ?, ?, ?, ?, date(?))";
             }
 
             try (PreparedStatement pstmt = dbManager.getConnection().prepareStatement(sql)) {
@@ -240,7 +265,7 @@ public class HealthDataEntryPage extends JFrame {
                 pstmt.setString(4, bloodPressure);
                 pstmt.setInt(5, heartRate);
                 pstmt.setString(6, user.getUsername());
-                pstmt.setString(7, date);
+                pstmt.setString(7, formattedDate);
 
                 pstmt.executeUpdate();
                 JOptionPane.showMessageDialog(this, "Health data saved successfully!");
@@ -248,9 +273,11 @@ public class HealthDataEntryPage extends JFrame {
 
             dbManager.closeConnection();
         } catch (SQLException e) {
-            JOptionPane.showMessageDialog(this, "Database error: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Database error: " + e.getMessage(), "Error",
+                    JOptionPane.ERROR_MESSAGE);
         } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(this, "Invalid input. Please ensure all fields are filled correctly.", "Error", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Invalid input. Please ensure all fields are filled correctly.",
+                    "Error", JOptionPane.WARNING_MESSAGE);
         }
     }
 
@@ -273,7 +300,8 @@ public class HealthDataEntryPage extends JFrame {
         } catch (NumberFormatException e) {
             bmiLabel.setText("N/A");
         } catch (SQLException e) {
-            JOptionPane.showMessageDialog(this, "Database error: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Database error: " + e.getMessage(), "Error",
+                    JOptionPane.ERROR_MESSAGE);
         }
     }
 }

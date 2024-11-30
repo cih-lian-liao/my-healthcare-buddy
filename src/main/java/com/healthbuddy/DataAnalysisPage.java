@@ -15,12 +15,9 @@ import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.plot.CategoryPlot;
-import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.category.LineAndShapeRenderer;
-import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.chart.axis.CategoryAxis;
 import org.jfree.chart.axis.CategoryLabelPositions;
-import org.jfree.chart.axis.DateAxis;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.data.category.DefaultCategoryDataset;
 
@@ -30,7 +27,6 @@ public class DataAnalysisPage extends JFrame {
     private Color primaryColor = new Color(100, 149, 237);
     private Color backgroundColor = new Color(240, 248, 255);
     private JPanel chartPanel;
-    private JPanel compareChartPanel;
     private JComboBox<String> metricCombo;
     private JComboBox<String> timeRangeCombo;
     private DatabaseManager dbManager;
@@ -72,33 +68,17 @@ public class DataAnalysisPage extends JFrame {
         mainPanel.add(controlPanel, BorderLayout.NORTH);
 
         // Charts Panel in center
-        JPanel chartsPanel = new JPanel(new GridLayout(1, 2, 10, 0));
+        JPanel chartsPanel = new JPanel(new BorderLayout());
         chartsPanel.setOpaque(false);
         chartsPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        // Left Chart Panel
+        // Chart Panel
         chartPanel = new JPanel(new BorderLayout());
         chartPanel.setBackground(Color.WHITE);
         chartPanel.setBorder(BorderFactory.createTitledBorder(
                 BorderFactory.createLineBorder(primaryColor), "Health Metrics Chart"));
 
-        // Right Compare Chart Panel
-        JPanel rightPanel = new JPanel(new BorderLayout());
-        rightPanel.setBackground(Color.WHITE);
-        rightPanel.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(primaryColor), "Comparison Chart"));
-
-        // Create a separate panel for comparison controls
-        JPanel comparisonControlsPanel = createComparisonPanel();
-        rightPanel.add(comparisonControlsPanel, BorderLayout.NORTH);
-
-        // Create a panel for the comparison chart
-        compareChartPanel = new JPanel(new BorderLayout());
-        compareChartPanel.setBackground(Color.WHITE);
-        rightPanel.add(compareChartPanel, BorderLayout.CENTER);
-
-        chartsPanel.add(chartPanel);
-        chartsPanel.add(rightPanel);
+        chartsPanel.add(chartPanel, BorderLayout.CENTER);
         mainPanel.add(chartsPanel, BorderLayout.CENTER);
 
         // Back button panel
@@ -137,7 +117,7 @@ public class DataAnalysisPage extends JFrame {
         timePanel.setOpaque(false);
         timePanel.add(new JLabel("Time Range:"), BorderLayout.NORTH);
         timeRangeCombo = new JComboBox<>(new String[] {
-                "Last Week", "Last Month", "Last 3 Months", "Last Year"
+                "Last Week", "Last Month", "Last 3 Months"
         });
         timePanel.add(timeRangeCombo, BorderLayout.CENTER);
 
@@ -151,67 +131,6 @@ public class DataAnalysisPage extends JFrame {
         controlPanel.add(exportButton);
 
         return controlPanel;
-    }
-
-    private JPanel createComparisonPanel() {
-        JPanel comparisonPanel = new JPanel(new BorderLayout(5, 5));
-        comparisonPanel.setOpaque(false);
-        comparisonPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-
-        // Top controls panel
-        JPanel controlsPanel = new JPanel(new BorderLayout(5, 5));
-        controlsPanel.setOpaque(false);
-
-        JLabel titleLabel = new JLabel("Compare with:");
-        titleLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 14));
-
-        // Comparison time selector
-        JComboBox<String> compareTimeCombo = new JComboBox<>(new String[] {
-                "Last Week",
-                "Last Month",
-                "Last 3 Months",
-                "Target Value"
-        });
-
-        controlsPanel.add(titleLabel, BorderLayout.WEST);
-        controlsPanel.add(compareTimeCombo, BorderLayout.CENTER);
-
-        // Button panel
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        buttonPanel.setOpaque(false);
-
-        JButton compareButton = createStyledButton("Compare");
-        JButton clearButton = createStyledButton("Clear");
-
-        compareButton.addActionListener(e -> {
-            String selected = (String) compareTimeCombo.getSelectedItem();
-            if (selected != null) {
-                updateComparisonChart(selected);
-            }
-        });
-
-        clearButton.addActionListener(e -> clearComparisonChart());
-
-        buttonPanel.add(compareButton);
-        buttonPanel.add(clearButton);
-        controlsPanel.add(buttonPanel, BorderLayout.EAST);
-
-        comparisonPanel.add(controlsPanel, BorderLayout.NORTH);
-
-        // Chart panel
-        JPanel chartPanel = new JPanel(new BorderLayout());
-        chartPanel.setOpaque(false);
-        compareChartPanel = chartPanel;
-        comparisonPanel.add(chartPanel, BorderLayout.CENTER);
-
-        return comparisonPanel;
-    }
-
-    private void clearComparisonChart() {
-        compareChartPanel.removeAll();
-        compareChartPanel.add(new JLabel("No comparison data selected", SwingConstants.CENTER));
-        compareChartPanel.revalidate();
-        compareChartPanel.repaint();
     }
 
     private void setupSelectionListeners() {
@@ -274,18 +193,30 @@ public class DataAnalysisPage extends JFrame {
             rs = dbManager.getHealthData(user.getUsername(), selectedMetric, timeRange);
             DefaultCategoryDataset dataset = new DefaultCategoryDataset();
 
+            // Count total data points for date label handling
+            int dataPoints = 0;
             while (rs.next()) {
+                dataPoints++;
                 String date = rs.getString("date");
-                // Format date to show only MM/DD
                 String formattedDate = date.substring(0, 5);
-
-                double value;
-                if (selectedMetric.equalsIgnoreCase("Blood Pressure")) {
-                    value = parseBloodPressure(rs.getString(2));
-                } else {
-                    value = rs.getDouble(2);
-                }
+                double value = rs.getDouble(2);
                 dataset.addValue(value, selectedMetric, formattedDate);
+
+                // Add target weight line if metric is weight
+                if (selectedMetric.equals("Weight")) {
+                    double targetWeight = dbManager.getTargetValue(user.getUsername(), "weight");
+                    if (targetWeight > 0) {
+                        dataset.addValue(targetWeight, "Target Weight", formattedDate);
+                    }
+                }
+            }
+
+            if (dataset.getRowCount() == 0) {
+                JOptionPane.showMessageDialog(this,
+                        "No data available for the selected period",
+                        "No Data",
+                        JOptionPane.INFORMATION_MESSAGE);
+                return;
             }
 
             JFreeChart chart = ChartFactory.createLineChart(
@@ -296,32 +227,51 @@ public class DataAnalysisPage extends JFrame {
 
             // Customize chart appearance
             chart.setBackgroundPaint(Color.WHITE);
-
             CategoryPlot plot = chart.getCategoryPlot();
             LineAndShapeRenderer renderer = new LineAndShapeRenderer();
 
-            // Show points on the line
+            // Main metric line
             renderer.setSeriesShapesVisible(0, true);
             renderer.setSeriesShape(0, new Ellipse2D.Double(-4, -4, 8, 8));
             renderer.setSeriesPaint(0, primaryColor);
             renderer.setSeriesStroke(0, new BasicStroke(2.0f));
+
+            // Target weight line if present
+            if (selectedMetric.equals("Weight")) {
+                renderer.setSeriesShapesVisible(1, false); // No points on target line
+                renderer.setSeriesPaint(1, new Color(220, 20, 60)); // Red color
+                renderer.setSeriesStroke(1, new BasicStroke(1.0f, BasicStroke.CAP_BUTT,
+                        BasicStroke.JOIN_MITER, 10.0f, new float[] { 10.0f }, 0.0f)); // Dashed line
+            }
 
             plot.setRenderer(renderer);
             plot.setBackgroundPaint(Color.WHITE);
             plot.setRangeGridlinePaint(Color.LIGHT_GRAY);
             plot.setDomainGridlinePaint(Color.LIGHT_GRAY);
 
-            // Customize the domain axis
+            // Handle date labels based on number of data points
+            // Handle date labels based on number of data points
             CategoryAxis domainAxis = plot.getDomainAxis();
-            domainAxis.setCategoryLabelPositions(CategoryLabelPositions.UP_45); // Rotate labels
-            domainAxis.setTickLabelFont(new Font(Font.SANS_SERIF, Font.PLAIN, 11));
+            if (dataPoints > 15) {
+                int skipFactor = dataPoints / 10; // Show approximately 10 labels
+                domainAxis.setCategoryLabelPositions(CategoryLabelPositions.UP_45);
 
-            // Customize the range axis
+                // Ensure we show at least first, last, and some intermediate dates
+                for (int i = 0; i < dataset.getColumnCount(); i++) {
+                    if (i != 0 && i != dataset.getColumnCount() - 1 && i % skipFactor != 0) {
+                        // Hide labels except first, last, and every skipFactor-th label
+                        domainAxis.setTickLabelPaint(dataset.getColumnKey(i), new Color(0, 0, 0, 0));
+                    }
+                }
+            } else {
+                domainAxis.setCategoryLabelPositions(CategoryLabelPositions.UP_45);
+            }
+
             NumberAxis rangeAxis = (NumberAxis) plot.getRangeAxis();
             rangeAxis.setTickLabelFont(new Font(Font.SANS_SERIF, Font.PLAIN, 11));
 
             ChartPanel chartPanel = new ChartPanel(chart);
-            chartPanel.setPreferredSize(new Dimension(400, 300));
+            chartPanel.setPreferredSize(new Dimension(800, 500));
 
             this.chartPanel.removeAll();
             this.chartPanel.add(chartPanel, BorderLayout.CENTER);
@@ -342,106 +292,6 @@ public class DataAnalysisPage extends JFrame {
                 e.printStackTrace();
             }
         }
-    }
-
-    private void updateComparisonChart(String comparisonType) {
-        String selectedMetric = (String) metricCombo.getSelectedItem();
-        ResultSet rs = null;
-        try {
-            DefaultCategoryDataset dataset = new DefaultCategoryDataset();
-
-            // Current period data
-            rs = dbManager.getHealthData(user.getUsername(), selectedMetric, "Last Week");
-            while (rs.next()) {
-                String date = rs.getString("date");
-                String formattedDate = date.substring(0, 5);
-                double value = rs.getDouble(2);
-                dataset.addValue(value, "Current", formattedDate);
-            }
-
-            // Comparison data
-            switch (comparisonType) {
-                case "Previous Week":
-                    rs = dbManager.getComparisonData(user.getUsername(), selectedMetric, 7);
-                    while (rs.next()) {
-                        String date = rs.getString("date");
-                        String formattedDate = date.substring(0, 5);
-                        double value = rs.getDouble(2);
-                        dataset.addValue(value, "Previous", formattedDate);
-                    }
-                    break;
-
-                case "Target Value":
-                    // Add target line based on user's goals
-                    double targetValue = dbManager.getTargetValue(user.getUsername(), selectedMetric);
-                    rs = dbManager.getHealthData(user.getUsername(), selectedMetric, "Last Week");
-                    while (rs.next()) {
-                        String date = rs.getString("date");
-                        String formattedDate = date.substring(0, 5);
-                        dataset.addValue(targetValue, "Target", formattedDate);
-                    }
-                    break;
-            }
-
-            JFreeChart chart = ChartFactory.createLineChart(
-                    selectedMetric + " Comparison",
-                    "Date",
-                    getYAxisLabel(selectedMetric),
-                    dataset);
-
-            customizeComparisonChart(chart);
-
-            ChartPanel chartPanel = new ChartPanel(chart);
-            compareChartPanel.removeAll();
-            compareChartPanel.add(chartPanel, BorderLayout.CENTER);
-            compareChartPanel.revalidate();
-            compareChartPanel.repaint();
-
-        } catch (SQLException e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(this,
-                    "Error creating comparison chart: " + e.getMessage(),
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE);
-        } finally {
-            try {
-                if (rs != null)
-                    rs.close();
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    private void customizeComparisonChart(JFreeChart chart) {
-        chart.setBackgroundPaint(Color.WHITE);
-        CategoryPlot plot = chart.getCategoryPlot();
-        LineAndShapeRenderer renderer = new LineAndShapeRenderer();
-
-        // Current period line (blue)
-        renderer.setSeriesShapesVisible(0, true);
-        renderer.setSeriesShape(0, new Ellipse2D.Double(-4, -4, 8, 8));
-        renderer.setSeriesPaint(0, primaryColor);
-        renderer.setSeriesStroke(0, new BasicStroke(2.0f));
-
-        // Comparison line (red)
-        renderer.setSeriesShapesVisible(1, true);
-        renderer.setSeriesShape(1, new Ellipse2D.Double(-4, -4, 8, 8));
-        renderer.setSeriesPaint(1, new Color(220, 20, 60));
-        renderer.setSeriesStroke(1, new BasicStroke(2.0f));
-
-        plot.setRenderer(renderer);
-        plot.setBackgroundPaint(Color.WHITE);
-        plot.setRangeGridlinePaint(Color.LIGHT_GRAY);
-        plot.setDomainGridlinePaint(Color.LIGHT_GRAY);
-
-        CategoryAxis domainAxis = plot.getDomainAxis();
-        domainAxis.setCategoryLabelPositions(CategoryLabelPositions.UP_45);
-    }
-
-    private double parseBloodPressure(String bp) {
-        String[] parts = bp.split("/");
-        return Double.parseDouble(parts[0]); // Use systolic pressure
     }
 
     private String getYAxisLabel(String metric) {
@@ -476,10 +326,17 @@ public class DataAnalysisPage extends JFrame {
                 String timeRange = (String) timeRangeCombo.getSelectedItem();
 
                 ResultSet rs = dbManager.getHealthData(user.getUsername(), selectedMetric, timeRange);
+
+                // Add data to list first to avoid ResultSet issues
                 while (rs.next()) {
                     String date = rs.getString("date");
-                    double value = rs.getDouble(2);
-                    writer.printf("%s,%s,%.2f%n", date, selectedMetric, value);
+                    String value;
+                    if (selectedMetric.equals("Blood Pressure")) {
+                        value = rs.getString(2); // Get blood pressure as string
+                    } else {
+                        value = String.format("%.2f", rs.getDouble(2));
+                    }
+                    writer.printf("%s,%s,%s%n", date, selectedMetric, value);
                 }
 
                 JOptionPane.showMessageDialog(this,
