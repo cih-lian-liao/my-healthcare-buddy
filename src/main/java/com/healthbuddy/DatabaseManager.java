@@ -90,13 +90,39 @@ public class DatabaseManager {
     }
 
     private void createDefaultData() {
-        String insertTestUser = "INSERT INTO users (username, password, name) VALUES " +
-                "('test', 'test123', 'Test User')";
-
         try (Statement stmt = connection.createStatement()) {
-            stmt.execute(insertTestUser);
+            // Insert test user if not exists
+            stmt.execute("INSERT OR IGNORE INTO users (username, password, name, age, gender, height, target_weight) " +
+                    "VALUES ('test', 'test123', 'Test User', 25, 'Male', 175.0, 70.0)");
+
+            // Insert sample health data
+            String[] healthData = {
+                    "INSERT OR IGNORE INTO health_data (username, date, weight, bmi, steps, blood_pressure, heart_rate) VALUES "
+                            +
+                            "('test', '03/15/2024', 75.5, 24.6, 8500, '120/80', 72)",
+                    "INSERT OR IGNORE INTO health_data (username, date, weight, bmi, steps, blood_pressure, heart_rate) VALUES "
+                            +
+                            "('test', '03/16/2024', 75.2, 24.5, 9000, '119/79', 71)",
+                    "INSERT OR IGNORE INTO health_data (username, date, weight, bmi, steps, blood_pressure, heart_rate) VALUES "
+                            +
+                            "('test', '03/17/2024', 74.8, 24.4, 9500, '118/78', 70)",
+                    "INSERT OR IGNORE INTO health_data (username, date, weight, bmi, steps, blood_pressure, heart_rate) VALUES "
+                            +
+                            "('test', '03/18/2024', 74.5, 24.3, 10000, '118/77', 69)",
+                    "INSERT OR IGNORE INTO health_data (username, date, weight, bmi, steps, blood_pressure, heart_rate) VALUES "
+                            +
+                            "('test', '03/19/2024', 74.2, 24.2, 10500, '117/77', 68)",
+                    "INSERT OR IGNORE INTO health_data (username, date, weight, bmi, steps, blood_pressure, heart_rate) VALUES "
+                            +
+                            "('test', '03/20/2024', 73.8, 24.1, 11000, '117/76', 67)"
+            };
+
+            for (String sql : healthData) {
+                stmt.execute(sql);
+            }
         } catch (SQLException e) {
             System.err.println("Error creating default data: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
@@ -124,19 +150,136 @@ public class DatabaseManager {
         }
         return false;
     }
+
     // Insert username and password
     public boolean insertUser(String username, String password) throws SQLException {
         String sql = "INSERT INTO users (username, password) VALUES (?, ?)";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setString(1, username);
-            pstmt.setString(2, password); 
+            pstmt.setString(2, password);
             pstmt.executeUpdate();
-            return true; 
+            return true;
         } catch (SQLException e) {
             System.err.println("Error inserting user: " + e.getMessage());
-            throw e; 
+            throw e;
         }
     }
+
+    public ResultSet getHealthData(String username, String metric, String timeRange) throws SQLException {
+        String columnName;
+        switch (metric.toLowerCase()) {
+            case "weight":
+                columnName = "weight";
+                break;
+            case "bmi":
+                columnName = "bmi";
+                break;
+            case "steps":
+                columnName = "steps";
+                break;
+            case "blood pressure":
+                columnName = "blood_pressure";
+                break;
+            case "heart rate":
+                columnName = "heart_rate";
+                break;
+            default:
+                columnName = "weight";
+        }
+
+        int limit;
+        switch (timeRange) {
+            case "Last Week":
+                limit = 7;
+                break;
+            case "Last Month":
+                limit = 30;
+                break;
+            case "Last 3 Months":
+                limit = 90;
+                break;
+            case "Last Year":
+                limit = 365;
+                break;
+            default:
+                limit = 30;
+        }
+
+        String dateFilter;
+        switch (timeRange) {
+            case "Last Week":
+                dateFilter = "date >= date('now', '-7 days') AND date <= date('now')";
+                break;
+            case "Last Month":
+                dateFilter = "date >= date('now', '-1 month') AND date <= date('now')";
+                break;
+            case "Last 3 Months":
+                dateFilter = "date >= date('now', '-3 months') AND date <= date('now')";
+                break;
+            case "Last Year":
+                dateFilter = "date >= date('now', '-1 year') AND date <= date('now')";
+                break;
+            default:
+                dateFilter = "date >= date('now', '-7 days') AND date <= date('now')";
+                break;
+        }
+
+        String sql = "SELECT date, " + columnName + " FROM health_data " +
+                "WHERE username = ? AND " + dateFilter + " " +
+                "ORDER BY date ASC";
+
+        PreparedStatement pstmt = connection.prepareStatement(sql);
+        pstmt.setString(1, username);
+        return pstmt.executeQuery();
+    }
+
+    public ResultSet getComparisonData(String username, String metric, int daysOffset) throws SQLException {
+        String columnName;
+        switch (metric.toLowerCase()) {
+            case "weight":
+                columnName = "weight";
+                break;
+            case "bmi":
+                columnName = "bmi";
+                break;
+            case "steps":
+                columnName = "steps";
+                break;
+            case "blood pressure":
+                columnName = "blood_pressure";
+                break;
+            case "heart rate":
+                columnName = "heart_rate";
+                break;
+            default:
+                columnName = "weight";
+                break;
+        }
+
+        // Get data from previous period
+        String sql = "SELECT date, " + columnName + " FROM health_data " +
+                "WHERE username = ? AND " +
+                "date >= date('now', '-" + (daysOffset * 2) + " days') AND " +
+                "date < date('now', '-" + daysOffset + " days') " +
+                "ORDER BY date ASC";
+
+        PreparedStatement pstmt = connection.prepareStatement(sql);
+        pstmt.setString(1, username);
+        return pstmt.executeQuery();
+    }
+
+    public double getTargetValue(String username, String metric) throws SQLException {
+        String sql = "SELECT target_weight FROM users WHERE username = ?";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, username);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return rs.getDouble("target_weight");
+            }
+        }
+        return 0.0;
+    }
+
     // Check username uniqueness
     public boolean checkUsernameExists(String username) throws SQLException {
         String sql = "SELECT username FROM users WHERE username = ?";
@@ -146,7 +289,7 @@ public class DatabaseManager {
             return rs.next();
         }
     }
-    
+
     public User getUser(String username) {
         String sql = "SELECT * FROM users WHERE username = ?";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
