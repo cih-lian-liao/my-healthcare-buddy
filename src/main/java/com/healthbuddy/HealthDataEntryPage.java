@@ -77,7 +77,7 @@ public class HealthDataEntryPage extends JFrame {
             public void mouseClicked(java.awt.event.MouseEvent e) {
                 CalendarPopup popup = new CalendarPopup(dateField, selectedDate -> {
                     loadExistingDataForDate(selectedDate);
-                });
+                }, user, "HealthData");
                 popup.show();
             }
         });
@@ -192,6 +192,7 @@ public class HealthDataEntryPage extends JFrame {
             }
             String formattedDate = outputFormat.format(parsedDate);
             String query = "SELECT * FROM health_data WHERE username = ? AND date = date(?)";
+            // .out.println(query);
             try (PreparedStatement pstmt = dbManager.getConnection().prepareStatement(query)) {
                 pstmt.setString(1, user.getUsername());
                 pstmt.setString(2, formattedDate);

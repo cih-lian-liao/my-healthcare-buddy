@@ -4,6 +4,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.sql.SQLException;
+import java.text.ParseException;
 import java.util.Calendar;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -15,21 +17,19 @@ public class CalendarPopup {
     private JPanel calendarPanel;
     private Consumer<String> onDateSelected;
 
-    
-    public CalendarPopup(JTextField parentField, Consumer<String> onDateSelected) {
+    public CalendarPopup(JTextField parentField, Consumer<String> onDateSelected, User user, String type) {
         this.calendar = Calendar.getInstance();
         this.onDateSelected = onDateSelected;
-        initCalendarPopup(parentField);
+        initCalendarPopup(parentField, user, type);
     }
 
-    private void initCalendarPopup(JTextField parentField) {
+    private void initCalendarPopup(JTextField parentField, User user, String type) {
         calendarPopup = new JWindow();
         calendarPopup.setLayout(new BorderLayout());
         calendarPopup.setSize(parentField.getWidth(), 250);
         calendarPopup.setLocation(
                 parentField.getLocationOnScreen().x,
-                parentField.getLocationOnScreen().y + parentField.getHeight()
-        );
+                parentField.getLocationOnScreen().y + parentField.getHeight());
 
         // Create the header with month navigation
         JPanel headerPanel = new JPanel(new BorderLayout());
@@ -44,7 +44,7 @@ public class CalendarPopup {
         prevButton.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 10));
         prevButton.addActionListener(e -> {
             calendar.add(Calendar.MONTH, -1);
-            updateCalendarPanel(parentField, monthLabel);
+            updateCalendarPanel(parentField, monthLabel, user, type);
         });
 
         // Button to navigate to the next month
@@ -52,7 +52,7 @@ public class CalendarPopup {
         nextButton.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 10));
         nextButton.addActionListener(e -> {
             calendar.add(Calendar.MONTH, 1);
-            updateCalendarPanel(parentField, monthLabel);
+            updateCalendarPanel(parentField, monthLabel, user, type);
         });
 
         // Add components to the header panel
@@ -63,7 +63,7 @@ public class CalendarPopup {
         // Create the panel to hold the calendar grid
         calendarPanel = new JPanel(new GridLayout(0, 7, 2, 2));
         calendarPanel.setBackground(new Color(240, 248, 255));
-        updateCalendarPanel(parentField, monthLabel);
+        updateCalendarPanel(parentField, monthLabel, user, type);
 
         // Add the header and calendar grid to the popup
         calendarPopup.add(headerPanel, BorderLayout.NORTH);
@@ -74,12 +74,12 @@ public class CalendarPopup {
         monthLabel.setText(String.format("%1$tB %1$tY", calendar));
     }
 
-    private void updateCalendarPanel(JTextField parentField, JLabel monthLabel) {
+    private void updateCalendarPanel(JTextField parentField, JLabel monthLabel, User user, String type) {
         calendarPanel.removeAll();
         updateMonthLabel(monthLabel);
 
         // Add day of week headers
-        String[] daysOfWeek = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
+        String[] daysOfWeek = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
         for (String day : daysOfWeek) {
             JLabel dayLabel = new JLabel(day, JLabel.CENTER);
             dayLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 10));
@@ -96,49 +96,70 @@ public class CalendarPopup {
             calendarPanel.add(new JLabel());
         }
 
-        // Add the day cells
-        for (int day = 1; day <= daysInMonth; day++) {
-            int currentDay = day;
-            JLabel dayLabel = new JLabel(String.valueOf(currentDay), JLabel.CENTER);
-            dayLabel.setOpaque(true);
-            dayLabel.setPreferredSize(new Dimension(parentField.getWidth() / 7, 30));
+        try {
+            DatabaseManager dbManager = new DatabaseManager();
+            dbManager.connect();
+            for (int day = 1; day <= daysInMonth; day++) {
+                int currentDay = day;
+                JLabel dayLabel = new JLabel(String.valueOf(currentDay), JLabel.CENTER);
+                dayLabel.setOpaque(true);
+                dayLabel.setPreferredSize(new Dimension(parentField.getWidth() / 7, 30));
 
-            // Format the date as MM/DD/YYYY
-            String date = String.format("%1$tm/%2$02d/%1$tY", calendar, currentDay);
-
-            // Highlight today's date
-            if (calendar.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
-                    calendar.get(Calendar.MONTH) == today.get(Calendar.MONTH) &&
-                    currentDay == today.get(Calendar.DAY_OF_MONTH)) {
-                dayLabel.setBorder(BorderFactory.createLineBorder(new Color(0, 128, 0), 2));
-            } else {
-                dayLabel.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
-            }
-
-            // Add a click listener to select the date
-            dayLabel.addMouseListener(new MouseAdapter() {
-                @Override
-                public void mouseClicked(MouseEvent e) {
-                    dayLabel.setBackground(new Color(100, 149, 237));
-                    dayLabel.setForeground(Color.WHITE);
-                    parentField.setText(date);
-
-                    if (onDateSelected != null) {
-                        onDateSelected.accept(date);
+                // Format the date as MM/DD/YYYY
+                String date = String.format("%1$tm/%2$02d/%1$tY", calendar, currentDay);
+                boolean hasData = false;
+                try {
+                    if (type == "DailyHabit") {
+                        hasData = dbManager.checkDailyHabitExists(user.getUsername(), date);
+                    } else if (type == "HealthData") {
+                        hasData = dbManager.checkHealthDataExists(user.getUsername(), date);
                     }
-
-                    // Close the popup after a short delay
-                    new Timer().schedule(new TimerTask() {
-                        @Override
-                        public void run() {
-                            calendarPopup.dispose();
-                        }
-                    }, 500);
+                } catch (ParseException e) {
+                    e.printStackTrace();
                 }
-            });
 
-            calendarPanel.add(dayLabel);
+                // Highlight today's date
+                if (calendar.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
+                        calendar.get(Calendar.MONTH) == today.get(Calendar.MONTH) &&
+                        currentDay == today.get(Calendar.DAY_OF_MONTH)) {
+                    dayLabel.setBorder(BorderFactory.createLineBorder(new Color(0, 128, 0), 2));
+                } else if (hasData) {
+                    dayLabel.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
+                    dayLabel.setBackground(Color.LIGHT_GRAY);
+                } else {
+                    dayLabel.setBorder(BorderFactory.createLineBorder(Color.WHITE));
+                    dayLabel.setBackground(Color.WHITE);
+                }
+
+                // Add a click listener to select the date
+                dayLabel.addMouseListener(new MouseAdapter() {
+                    @Override
+                    public void mouseClicked(MouseEvent e) {
+                        dayLabel.setBackground(new Color(100, 149, 237));
+                        dayLabel.setForeground(Color.WHITE);
+                        parentField.setText(date);
+
+                        if (onDateSelected != null) {
+                            onDateSelected.accept(date);
+                        }
+
+                        // Close the popup after a short delay
+                        new Timer().schedule(new TimerTask() {
+                            @Override
+                            public void run() {
+                                calendarPopup.dispose();
+                            }
+                        }, 500);
+                    }
+                });
+
+                calendarPanel.add(dayLabel);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
+
+        // Add the day cells
 
         calendarPanel.revalidate();
         calendarPanel.repaint();

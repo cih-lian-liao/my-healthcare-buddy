@@ -54,8 +54,9 @@ public class DailyHabitSetting extends JFrame {
             @Override
             public void mouseClicked(MouseEvent e) {
                 CalendarPopup popup = new CalendarPopup(dateField, selectedDate -> {
+                    // System.out.println("Selected date: " + selectedDate);
                     loadDailyHabitData(selectedDate);
-                });
+                }, user, "DailyHabit");
                 popup.show();
             }
         });
@@ -127,7 +128,8 @@ public class DailyHabitSetting extends JFrame {
 
             dbManager.closeConnection();
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Error loading data: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Error loading data: " + e.getMessage(), "Error",
+                    JOptionPane.ERROR_MESSAGE);
             e.printStackTrace();
         }
     }
@@ -159,8 +161,7 @@ public class DailyHabitSetting extends JFrame {
                         date,
                         Integer.parseInt(waterIntake),
                         exercise,
-                        Integer.parseInt(sleepHours)
-                );
+                        Integer.parseInt(sleepHours));
                 if (success) {
                     JOptionPane.showMessageDialog(this, "Data updated successfully!");
                 } else {
@@ -172,8 +173,7 @@ public class DailyHabitSetting extends JFrame {
                         date,
                         Integer.parseInt(waterIntake),
                         exercise,
-                        Integer.parseInt(sleepHours)
-                );
+                        Integer.parseInt(sleepHours));
                 if (success) {
                     JOptionPane.showMessageDialog(this, "Data saved successfully!");
                 } else {

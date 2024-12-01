@@ -198,15 +198,14 @@ public class DataAnalysisPage extends JFrame {
             while (rs.next()) {
                 dataPoints++;
                 String date = rs.getString("date");
-                String formattedDate = date.substring(0, 5);
                 double value = rs.getDouble(2);
-                dataset.addValue(value, selectedMetric, formattedDate);
+                dataset.addValue(value, selectedMetric, date);
 
                 // Add target weight line if metric is weight
                 if (selectedMetric.equals("Weight")) {
                     double targetWeight = dbManager.getTargetValue(user.getUsername(), "weight");
                     if (targetWeight > 0) {
-                        dataset.addValue(targetWeight, "Target Weight", formattedDate);
+                        dataset.addValue(targetWeight, "Target Weight", date);
                     }
                 }
             }

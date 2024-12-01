@@ -103,7 +103,7 @@ public class DatabaseManager {
 
             // Get current date for sample data
             Calendar cal = Calendar.getInstance();
-            SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy");
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
 
             // Create sample data for last 90 days
             for (int i = 0; i < 90; i++) {
@@ -212,7 +212,7 @@ public class DatabaseManager {
         }
 
         // Get current date in MM/dd/yyyy format
-        SimpleDateFormat outputFormat = new SimpleDateFormat("MM/dd/yyyy");
+        SimpleDateFormat outputFormat = new SimpleDateFormat("yyyy-MM-dd");
         Calendar cal = Calendar.getInstance();
         String endDate = outputFormat.format(cal.getTime());
 
@@ -374,6 +374,20 @@ public class DatabaseManager {
         }
     }
 
+    public boolean checkHealthDataExists(String username, String date) throws SQLException, ParseException {
+        SimpleDateFormat inputFormat = new SimpleDateFormat("MM/dd/yyyy");
+        SimpleDateFormat outputFormat = new SimpleDateFormat("yyyy-MM-dd");
+        Date parsedDate = inputFormat.parse(date);
+        String formattedDate = outputFormat.format(parsedDate);
+        String sql = "SELECT 1 FROM health_data WHERE username = ? AND date = date(?)";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, username);
+            pstmt.setString(2, formattedDate);
+            ResultSet rs = pstmt.executeQuery();
+            return rs.next();
+        }
+    }
+
     // Retrieves the daily habit record for the given username and date
     public ResultSet getDailyHabit(String username, String date) throws SQLException, ParseException {
         SimpleDateFormat inputFormat = new SimpleDateFormat("MM/dd/yyyy");
@@ -400,7 +414,7 @@ public class DatabaseManager {
             pstmt.setString(2, diet);
             pstmt.setInt(3, sleepHours);
             pstmt.setString(4, username);
-            pstmt.setString(2, formattedDate);
+            pstmt.setString(5, formattedDate);
 
             int rowsUpdated = pstmt.executeUpdate();
             return rowsUpdated > 0;
