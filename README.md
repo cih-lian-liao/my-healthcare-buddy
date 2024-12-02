@@ -1,52 +1,98 @@
 # My Healthcare Buddy
 
-A Java-based healthcare management application built using Maven. This project utilizes SQLite for database management, SLF4J for logging, and JFreeChart for visualizing data.
+A personal health management application that helps users track their health metrics, daily habits, and visualize their health progress over time.
 
 ## Prerequisites
 
-Before running the project, ensure you have the following installed:
+- Java JDK 11 or higher
+- Maven
+- SQLite (included in dependencies)
 
-1. **Java Development Kit (JDK)**: Version 11 or later  
-2. **Apache Maven**: Version 3.6.0 or later  
+## Installation & Setup
 
-## Getting Started
-
-### Clone the Repository
-
+1. Clone the repository
 ```bash
-git clone <repository-url>
+git clone [[repository-url]](https://github.com/cih-lian-liao/my-healthcare-buddy.git)
 cd my-healthcare-buddy
 ```
 
-### Build the Project
-
-To build the project and create an executable JAR file, run the following command:
-
+2. Build the application using Maven
 ```bash
 mvn clean package
 ```
 
-The compiled JAR file will be located in the target directory as my-healthcare-buddy-1.0-SNAPSHOT.jar.
+## Running the Application
 
-### Run the Application
+There are several ways to run the application:
 
-To run the application, use the following command:
-
+### Method 1: Direct JAR Execution (Recommended)
+After building, run the JAR file:
 ```bash
 java -jar target/my-healthcare-buddy-1.0-SNAPSHOT.jar
 ```
 
-Note: Ensure the Main class specified in the pom.xml file (com.healthbuddy.Main) is the correct entry point for your application.
+### Method 2: Using Maven
+```bash
+mvn exec:java -Dexec.mainClass="com.healthbuddy.Main"
+```
 
-## Dependencies
+## Default Login Credentials
+- Username: test
+- Password: test123
 
-The project uses the following dependencies:
+## Features
 
-- SQLite JDBC Driver: For database connectivity
-- SLF4J API and Simple Implementation: For logging
-- JFreeChart and JCommon: For creating charts and graphs
-- These dependencies are managed in the pom.xml file and will be downloaded automatically during the Maven build process.
+- Health metrics tracking (weight, BMI, steps, blood pressure, heart rate)
+- Daily habits monitoring
+- Data visualization and analysis
+- Data export functionality
+- Target weight tracking
+
+## Project Structure
+```
+my-healthcare-buddy/
+├── src/
+│   └── main/
+│       └── java/
+│           └── com/
+│               └── healthbuddy/
+│                   ├── Main.java
+│                   ├── LoginPage.java
+│                   ├── HomePage.java
+│                   └── ...
+├── data/          # Database storage
+├── pom.xml        # Maven configuration
+└── README.md
+```
+
+## Database
+
+The application uses SQLite for data storage. The database file is automatically created in the `data` directory when you first run the application.
+
+## Development
+
+To set up the development environment:
+
+1. Import the project into your IDE as a Maven project
+2. Ensure JDK 11 is configured
+3. Run the Main class (com.healthbuddy.Main)
+
+## Troubleshooting
+
+1. Database Connection Issues
+   - Check if the data directory exists
+   - Ensure write permissions are set correctly
+
+2. Display Issues
+   - Verify Java version compatibility
+   - Check system look and feel settings
 
 ## License
 
 This project is licensed under the MIT License. Feel free to modify and distribute it as needed.
+
+## Contributors
+
+- @alexcclo
+- @cih-lian-liao
+- @yanqin24
