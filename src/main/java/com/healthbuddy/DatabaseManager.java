@@ -6,11 +6,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.io.File;
-import java.text.SimpleDateFormat;
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 
@@ -49,6 +47,7 @@ public class DatabaseManager {
                 "CREATE TABLE IF NOT EXISTS users (" +
                         "username TEXT PRIMARY KEY," +
                         "password TEXT NOT NULL," +
+                        "salt TEXT NOT NULL," +
                         "name TEXT," +
                         "age INTEGER," +
                         "gender TEXT," +
@@ -97,9 +96,11 @@ public class DatabaseManager {
 
     private void createDefaultData() {
         try (Statement stmt = connection.createStatement()) {
-            // Insert test user
-            stmt.execute("INSERT OR IGNORE INTO users (username, password, name, age, gender, height, target_weight) " +
-                    "VALUES ('test', 'test123', 'Test User', 25, 'Male', 175.0, 70.0)");
+            // Insert test user with hashed password
+            String salt = PasswordSecurity.generateSalt();
+            String hashedPassword = PasswordSecurity.hashPassword("test123", salt);
+            stmt.execute("INSERT OR IGNORE INTO users (username, password, salt, name, age, gender, height, target_weight) " +
+                    "VALUES ('test', '" + hashedPassword + "', '" + salt + "', 'Test User', 25, 'Male', 175.0, 70.0)");
 
             // Get current date for sample data
             Calendar cal = Calendar.getInstance();
@@ -160,13 +161,14 @@ public class DatabaseManager {
     }
 
     public boolean validateLogin(String username, String password) {
-        String sql = "SELECT password FROM users WHERE username = ?";
+        String sql = "SELECT password, salt FROM users WHERE username = ?";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setString(1, username);
             ResultSet rs = pstmt.executeQuery();
             if (rs.next()) {
                 String storedPassword = rs.getString("password");
-                return password.equals(storedPassword); // In production, use password hashing
+                String salt = rs.getString("salt");
+                return PasswordSecurity.verifyPassword(password, storedPassword, salt);
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -174,12 +176,15 @@ public class DatabaseManager {
         return false;
     }
 
-    // Insert username and password
+    // Insert username and password with salt
     public boolean insertUser(String username, String password) throws SQLException {
-        String sql = "INSERT INTO users (username, password) VALUES (?, ?)";
+        String salt = PasswordSecurity.generateSalt();
+        String hashedPassword = PasswordSecurity.hashPassword(password, salt);
+        String sql = "INSERT INTO users (username, password, salt) VALUES (?, ?, ?)";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setString(1, username);
-            pstmt.setString(2, password);
+            pstmt.setString(2, hashedPassword);
+            pstmt.setString(3, salt);
             pstmt.executeUpdate();
             return true;
         } catch (SQLException e) {

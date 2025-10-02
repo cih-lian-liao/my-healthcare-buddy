@@ -194,7 +194,7 @@ public class HomePage extends JFrame {
         }
     }
 
-    private void openPofileSettingsPage(User user) {
+    private void openProfileSettingsPage(User user) {
         this.dispose();
         new ProfileSettingsPage(user, this).setVisible(true);
     }

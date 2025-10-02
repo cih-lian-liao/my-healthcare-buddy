@@ -198,13 +198,14 @@ public class LoginPage extends JFrame {
     }
 
     private boolean validateCredentials(String username, String password) throws SQLException {
-        String sql = "SELECT password FROM users WHERE username = ?";
+        String sql = "SELECT password, salt FROM users WHERE username = ?";
         try (PreparedStatement pstmt = dbManager.getConnection().prepareStatement(sql)) {
             pstmt.setString(1, username);
             ResultSet rs = pstmt.executeQuery();
             if (rs.next()) {
                 String storedPassword = rs.getString("password");
-                return password.equals(storedPassword);
+                String salt = rs.getString("salt");
+                return PasswordSecurity.verifyPassword(password, storedPassword, salt);
             }
         }
         return false;

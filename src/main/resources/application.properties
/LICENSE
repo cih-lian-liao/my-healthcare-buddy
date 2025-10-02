@@ -1,0 +1,36 @@
+# Database Configuration
+database.name=health_buddy
+database.path=health_buddy.db
+
+# Application Settings
+app.name=My Healthcare Buddy
+app.version=1.0.0
+app.mode=production
+
+# UI Configuration
+ui.theme.color=100
+ui.theme.color.green=149
+ui.theme.color.blue=237
+
+# Security Settings
+security.password.min-length=6
+security.password.require-special-chars=false
+
+# Data Validation
+validation.weight.min=20.0
+validation.weight.max=300.0
+validation.height.min=100.0
+validation.height.max=250.0
+validation.steps.max=100000
+validation.age.min=1
+validation.age.max=150
+
+# Logging
+logging.level=INFO
+logging.file.path=healthcare-buddy.log
+
+# Features
+feature.data-export=true
+feature.charts=true
+feature.goals-tracking=true
+feature.password-recovery=false

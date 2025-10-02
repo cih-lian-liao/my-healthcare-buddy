@@ -64,9 +64,9 @@ public class DailyHabitSetting extends JFrame {
         gbc.gridy = 1;
         mainPanel.add(dateField, gbc);
 
-        waterIntakeField = addRow(mainPanel, gbc, 2, "Water Intake (Integer):");
-        exerciseField = addRow(mainPanel, gbc, 3, "Exercise (Integer):");
-        sleepHoursField = addRow(mainPanel, gbc, 4, "Sleep Hours (Integer):");
+        waterIntakeField = addRow(mainPanel, gbc, 2, "Water Intake (cups):");
+        exerciseField = addRow(mainPanel, gbc, 3, "Diet Choice:");
+        sleepHoursField = addRow(mainPanel, gbc, 4, "Sleep Hours:");
 
         // Buttons Panel
         JPanel buttonPanel = new JPanel(new GridLayout(1, 2, 10, 10));
