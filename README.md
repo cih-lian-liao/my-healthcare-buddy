@@ -171,13 +171,19 @@ Password: test123
 
 **📺 Watch the complete application walkthrough:**
 
-<a href="docs/demo-video.mov">
-  <img src="https://img.shields.io/badge/🎬%20Watch%20Demo%20Video-FF0000?style=for-the-badge&logo=youtube&logoColor=white" alt="Watch Demo Video" />
-</a>
+<div align="center">
+
+**📺 Direct Video Preview:**
+
+[![My Healthcare Buddy Demo](https://img.youtube.com/vi/ikXm90GiwVU/maxresdefault.jpg)](https://youtu.be/ikXm90GiwVU)
+
+*▶️ Click the thumbnail above to play the full demo video*
+
+</div>
 
 > 💡 **Video Features**: Complete application flow demonstrating login, health data entry, chart analysis, habit tracking, and profile management.
 
-*Video Size: 39MB | Format: MOV | Resolution: HD*
+🔗 **[Watch on YouTube](https://youtu.be/ikXm90GiwVU)** | 📺 Direct embedding above
 
 </div>
 
