@@ -163,6 +163,24 @@ Password: test123
 
 </div>
 
+## 📹 Demo Video
+
+<div align="center">
+
+### 🎬 Application Demonstration
+
+**📺 Watch the complete application walkthrough:**
+
+<a href="docs/demo-video.mov">
+  <img src="https://img.shields.io/badge/🎬%20Watch%20Demo%20Video-FF0000?style=for-the-badge&logo=youtube&logoColor=white" alt="Watch Demo Video" />
+</a>
+
+> 💡 **Video Features**: Complete application flow demonstrating login, health data entry, chart analysis, habit tracking, and profile management.
+
+*Video Size: 39MB | Format: MOV | Resolution: HD*
+
+</div>
+
 ---
 
 ## 🏗️ Architecture
