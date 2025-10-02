@@ -17,7 +17,7 @@
 
 <div align="center">
 
-[![📊 Screenshots](https://img.shields.io/badge/📸_Screenshots-1DA1F2?style=flat-square)](#screenshots) •
+[![📊 Screenshots](https://img.shields.io/badge/📸_Screenshots-1DA1F2?style=flat-square)](#-screenshots) •
 [![🎬 Demo](https://img.shields.io/badge/🎬_Demo_Video-FF0000?style=flat-square&logo=youtube)](https://youtu.be/ikXm90GiwVU) •
 [![🏁 Quick Start](https://img.shields.io/badge/🚀_Quick_Start-00D4AA?style=flat-square)](#-quick-start) •
 [![⚙️ Install](https://img.shields.io/badge/📦_Installation-4285F4?style=flat-square)](INSTALL.md)
