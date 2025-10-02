@@ -44,7 +44,8 @@ public class DatabaseManager {
 
     public void createTables() {
         String[] createTableSQL = {
-                "CREATE TABLE IF NOT EXISTS users (" +
+                "DROP TABLE IF EXISTS users",
+                "CREATE TABLE users (" +
                         "username TEXT PRIMARY KEY," +
                         "password TEXT NOT NULL," +
                         "salt TEXT NOT NULL," +
